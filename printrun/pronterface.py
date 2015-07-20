@@ -181,7 +181,7 @@ class PronterWindow(MainWindow, pronsole.pronsole):
         MainWindow.__init__(self, None, title = _("Pronterface"), size = size)
         if self.settings.last_window_maximized:
             self.Maximize()
-        self.SetIcon(wx.Icon(iconfile("pronterface.png"), wx.BITMAP_TYPE_PNG))
+        self.SetIcon(wx.Icon(iconfile("pronterface.ico"), wx.BITMAP_TYPE_ICO))
         self.Bind(wx.EVT_SIZE, self.on_resize)
         self.Bind(wx.EVT_MAXIMIZE, self.on_maximize)
         self.window_ready = True
@@ -189,6 +189,10 @@ class PronterWindow(MainWindow, pronsole.pronsole):
         # set feedrates in printcore for pause/resume
         self.p.xy_feedrate = self.settings.xy_feedrate
         self.p.z_feedrate = self.settings.z_feedrate
+
+        # set rtnok value in printcore
+        self.p.rtnok = self.settings.rtnok
+
 
         self.panel.SetBackgroundColour(self.bgcolor)
         customdict = {}
@@ -328,10 +332,6 @@ class PronterWindow(MainWindow, pronsole.pronsole):
         self.Close()
 
     def kill(self, e):
-        if self.p.printing or self.p.paused:
-            dlg = wx.MessageDialog(self, _("Print in progress ! Are you really sure you want to quit ?"), _("Exit"), wx.YES_NO | wx.ICON_WARNING)
-            if dlg.ShowModal() == wx.ID_NO:
-                return
         pronsole.pronsole.kill(self)
         global pronterface_quitting
         pronterface_quitting = True
@@ -437,6 +437,26 @@ class PronterWindow(MainWindow, pronsole.pronsole):
                 self.logError(_("Printer is not online."))
         except Exception, x:
             self.logError(_("You must enter a speed. (%s)") % (repr(x),))
+
+    # set extrusion factor richokarl
+
+    def do_setext(self, l = ""):
+        try:
+            if l.__class__ not in (str, unicode) or not len(l):
+                l = str(self.ext_slider.GetValue())
+            else:
+                l = l.lower()
+            ext = int(l)
+            if self.p.online:
+                self.p.send_now("M221 S" + l)
+                self.log(_("Setting print extrusion factor to %d%%.") % ext)
+            else:
+                self.logError(_("Printer is not online."))
+        except Exception, x:
+            self.logError(_("You must enter a extrusion. (%s)") % (repr(x),))
+
+    #end set extrustion factor
+
 
     def setbedgui(self, f):
         self.bsetpoint = f
@@ -788,7 +808,7 @@ class PronterWindow(MainWindow, pronsole.pronsole):
 
         info = wx.AboutDialogInfo()
 
-        info.SetIcon(wx.Icon(iconfile("pronterface.png"), wx.BITMAP_TYPE_PNG))
+        info.SetIcon(wx.Icon(iconfile("pronterface.ico"), wx.BITMAP_TYPE_ICO))
         info.SetName('Printrun')
         info.SetVersion(printcore.__version__)
 
@@ -800,7 +820,7 @@ class PronterWindow(MainWindow, pronsole.pronsole):
                        % self.settings.total_filament_used
 
         info.SetDescription(description)
-        info.SetCopyright('(C) 2011 - 2015')
+        info.SetCopyright('(C) 2011 - 2014')
         info.SetWebSite('https://github.com/kliment/Printrun')
 
         licence = """\
@@ -1628,7 +1648,7 @@ Printrun. If not, see <http://www.gnu.org/licenses/>."""
 
     def update_tempdisplay(self):
         try:
-            temps = parse_temperature_report(self.tempreadings)
+            temps = parse_temperature_report(self.tempreadings.replace("B: " , "B:"))
             if "T0" in temps and temps["T0"][0]:
                 hotend_temp = float(temps["T0"][0])
             elif "T" in temps and temps["T"][0]:

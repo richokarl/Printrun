@@ -292,7 +292,7 @@ class Plater(wx.Frame):
         if "size" in kwargs:
             del kwargs["size"]
         wx.Frame.__init__(self, parent, title = _("Plate building tool"), size = size)
-        self.SetIcon(wx.Icon(iconfile("plater.png"), wx.BITMAP_TYPE_PNG))
+        self.SetIcon(wx.Icon(iconfile("plater.ico"), wx.BITMAP_TYPE_ICO))
         self.prepare_ui(**kwargs)
 
 def make_plater(panel_class):

@@ -39,11 +39,11 @@ def add_extra_controls(self, root, parentpanel, extra_buttons = None, mini_mode 
     base_line = 1 if standalone_mode else 2
 
     if standalone_mode:
-        gauges_base_line = base_line + 10
+        gauges_base_line = base_line + 11
     elif mini_mode and root.display_graph:
-        gauges_base_line = base_line + 6
+        gauges_base_line = base_line + 7
     else:
-        gauges_base_line = base_line + 5
+        gauges_base_line = base_line + 6
     tempdisp_line = gauges_base_line + (2 if root.display_gauges else 0)
     if mini_mode and root.display_graph:
         e_base_line = base_line + 3
@@ -62,6 +62,7 @@ def add_extra_controls(self, root, parentpanel, extra_buttons = None, mini_mode 
         "ebuttons": (e_base_line + 0, 0),
         "esettings": (e_base_line + 1, 0),
         "speedcontrol": (e_base_line + 2, 0),
+        "extcontrol": (e_base_line + 3, 0),
         "htemp_gauge": (gauges_base_line + 0, 0),
         "btemp_gauge": (gauges_base_line + 1, 0),
         "tempdisp": (tempdisp_line, 0),
@@ -81,6 +82,7 @@ def add_extra_controls(self, root, parentpanel, extra_buttons = None, mini_mode 
         "ebuttons": (1, 5 if root.display_graph else 6),
         "esettings": (1, 5 if root.display_graph else 6),
         "speedcontrol": (1, 5 if root.display_graph else 6),
+        "extcontrol": (1, 5 if root.display_graph else 6),
         "htemp_gauge": (1, 5 if mini_mode else 6),
         "btemp_gauge": (1, 5 if mini_mode else 6),
         "tempdisp": (1, 5 if mini_mode else 6),
@@ -217,6 +219,44 @@ def add_extra_controls(self, root, parentpanel, extra_buttons = None, mini_mode 
         root.speed_setbtn.SetBackgroundColour("red")
         root.speed_spin.SetValue(value)
     root.speed_slider.Bind(wx.EVT_SCROLL, speedslider_scroll)
+
+    # extrusion control richokarl
+
+    extpanel = root.newPanel(parentpanel)
+    extsizer = wx.BoxSizer(wx.HORIZONTAL)
+    extsizer.Add(wx.StaticText(extpanel, -1, _("Extrusion Factor:")), flag = wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
+
+    root.ext_slider = wx.Slider(extpanel, -1, 100, 1, 300)
+    extsizer.Add(root.ext_slider, 1, flag = wx.EXPAND)
+
+    root.ext_spin = FloatSpin(extpanel, -1, value = 100, min_val = 1, max_val = 300, digits = 0, style = wx.ALIGN_LEFT, size = (80, -1))
+    extsizer.Add(root.ext_spin, 0, flag = wx.ALIGN_CENTER_VERTICAL)
+    root.ext_label = wx.StaticText(extpanel, -1, _("%"))
+    extsizer.Add(root.ext_label, flag = wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
+
+    def extslider_set(event):
+        root.do_setext()
+        root.ext_setbtn.SetBackgroundColour(wx.NullColour)
+    root.ext_setbtn = make_button(extpanel, _("Set"), extslider_set, _("Set print extrusion factor"), size = (38, -1), style = wx.BU_EXACTFIT)
+    root.printerControls.append(root.ext_setbtn)
+    extsizer.Add(root.ext_setbtn, flag = wx.ALIGN_CENTER)
+    extpanel.SetSizer(extsizer)
+    add("extcontrol", extpanel, flag = wx.EXPAND)
+
+    def extslider_spin(event):
+        value = root.ext_spin.GetValue()
+        root.ext_setbtn.SetBackgroundColour("red")
+        root.ext_slider.SetValue(value)
+    root.ext_spin.Bind(wx.EVT_SPINCTRL, extslider_spin)
+
+    def extslider_scroll(event):
+        value = root.ext_slider.GetValue()
+        root.ext_setbtn.SetBackgroundColour("red")
+        root.ext_spin.SetValue(value)
+    root.ext_slider.Bind(wx.EVT_SCROLL, extslider_scroll)
+
+
+    # end of extrustion control
 
     # Temperature gauges #
 

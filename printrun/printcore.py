@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Printrun.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = "2015.03.10"
+__version__ = "2014.08.01"
 
 from serial import Serial, SerialException, PARITY_ODD, PARITY_NONE
 from select import error as SelectError
@@ -38,6 +38,8 @@ from collections import deque
 from printrun import gcoder
 from .utils import install_locale, decode_utf8
 install_locale('pronterface')
+
+
 
 def locked(f):
     @wraps(f)
@@ -112,6 +114,8 @@ class printcore():
             self.connect(port, baud)
         self.xy_feedrate = None
         self.z_feedrate = None
+        self.rtnok = None
+
 
     def logError(self, error):
         if self.errorcb:
@@ -524,11 +528,13 @@ class printcore():
             time.sleep(0.001)
         # Only wait for oks when using serial connections or when not using tcp
         # in streaming mode
-        if not self.printer_tcp or not self.tcp_streaming_mode:
-            self.clear = False
-        if not (self.printing and self.printer and self.online):
-            self.clear = True
-            return
+        # richokarl If stament added to skip wait for OK's for duet electronics
+        if self.rtnok:
+            if not self.printer_tcp or not self.tcp_streaming_mode:
+                self.clear = False
+            if not (self.printing and self.printer and self.online):
+                self.clear = True
+                return
         if self.resendfrom < self.lineno and self.resendfrom > -1:
             self._send(self.sentlines[self.resendfrom], self.resendfrom, False)
             self.resendfrom += 1
